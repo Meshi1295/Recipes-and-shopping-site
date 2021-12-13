@@ -6,5 +6,10 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+  loadedPageChange = 'recipes';
+
+  onNavigate(pageChange: string){
+    this.loadedPageChange = pageChange
+  }
   title = 'my-first-app';
 }

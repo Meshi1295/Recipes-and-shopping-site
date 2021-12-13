@@ -1,0 +1,164 @@
+import './style.css';
+
+import {
+  of,
+  map,
+  Observable,
+  timer,
+  Subject,
+  BehaviorSubject,
+  ReplaySubject,
+  Subscription,
+  interval,
+  forkJoin,
+  combineLatest,
+  throwError,
+  EMPTY,
+} from 'rxjs';
+import {
+  tap,
+  delay,
+  switchMap,
+  exhaustMap,
+  merge,
+  mergeWith,
+  catchError,
+  retry,
+  takeUntil,
+} from 'rxjs/operators';
+
+console.clear();
+
+const x = timer(0, 1000).pipe(
+  map((x: number) => x * 400),
+  tap((x: number) => console.log('from tap', x + 1))
+);
+// .subscribe(console.log);
+
+setTimeout(() => {
+  // x.unsubscribe();
+}, 0);
+
+const subject$: Subject<number> = new Subject<number>();
+
+subject$.next(1);
+subject$.next(2);
+subject$.next(3);
+
+subject$.subscribe(console.log);
+
+subject$.next(4);
+
+const bs$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+
+// bs$.subscribe(console.log)
+
+// --------1------2-------3------SUB---4
+
+const rs$: ReplaySubject<number> = new ReplaySubject<number>(2);
+
+rs$.next(1);
+rs$.next(2);
+rs$.next(3);
+
+// rs$.subscribe(console.log)
+
+rs$.next(4);
+
+const obs$ = of(subject$);
+
+const myObs$ = new Observable((observer) => {
+  observer.next(1), observer.error(), observer.complete();
+});
+
+// subject$.complete();
+// subject$.error('any error');
+
+const subscription: Subscription = subject$.subscribe(console.log);
+
+subscription.unsubscribe();
+
+subject$.next(5);
+
+const interval$ = interval(1000);
+
+// const sub = interval$.subscribe(console.log);
+
+setTimeout(() => {
+  // sub.unsubscribe()
+}, 3000);
+
+// -------X----X----|---X
+
+// --------------------------------------------------
+// flattening
+
+const eliran$ = of({
+  uid: '123',
+  name: 'Eliran',
+  email: 'eliran@e-square.io',
+}).pipe(delay(1000));
+
+const alex$ = of({
+  uid: '456',
+  name: 'Alex',
+  email: 'alex@e-square.io',
+}).pipe(delay(4000));
+
+const getUserItems$ = (name: string) => of(`${name} items`);
+
+// NEVER EVER DO!
+// const y = eliran$.subscribe((eliran) =>
+// getUserItems$(eliran.name).subscribe(console.log));
+
+// y.unsubscribe();
+
+const eliranItems$: Observable<string> = eliran$.pipe(
+  switchMap((eliran) => getUserItems$(eliran.name))
+);
+
+// eliranItems$.subscribe(console.log);
+
+// name: eli
+// -------|
+// ...name: eliran
+// ----|
+
+//switchMap, mergeMap, concatMap, exhaustMap
+
+// userSettings
+// getConfiguration
+
+// forkJoin([eliran$, alex$]).subscribe(console.log);
+
+const sub1 = new Subject<number>();
+const sub2 = new Subject<number>();
+
+combineLatest([sub1, sub2])
+  .pipe(
+    tap(() => {
+      throw new Error('my error');
+    }),
+    catchError((err) => EMPTY),
+    takeUntil(sub1)
+  )
+  .subscribe(console.log);
+
+// sub1.pipe(mergeWith(sub2)).subscribe(console.log);
+
+sub1.next(1);
+sub1.next(2);
+sub1.next(3);
+
+sub2.next(-1);
+
+sub1.next(4);
+
+sub2.next(-2);
+
+const sub3 = new Subject();
+interval$.pipe(takeUntil(sub3)).subscribe(console.log);
+
+setTimeout(() => {
+  sub3.next();
+}, 3000);
